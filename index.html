@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111318">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+<title>Фоторедактор</title>
+</head>
+<body>
+
+<header>
+  <label class="btn accent" for="file">Открыть</label>
+  <input id="file" type="file" accept="image/*" hidden>
+  <button id="undo" disabled>↶ Отмена</button>
+  <span class="spacer"></span>
+  <span id="net" class="badge">онлайн</span>
+  <button id="save" disabled>Сохранить</button>
+</header>
+
+<div id="stage">
+  <canvas id="view" width="4" height="3"></canvas>
+  <div id="empty">Откройте фото<br><small>Всё обрабатывается на вашем устройстве</small></div>
+</div>
+<div id="status" role="status"></div>
+
+<section id="panels">
+
+  <div class="pane" data-pane="crop">
+    <div class="row">
+      <button data-act="rl">⟲ 90°</button>
+      <button data-act="rr">⟳ 90°</button>
+      <button data-act="fh">⇋ Зеркало</button>
+      <button data-act="fv">⇅ Зеркало</button>
+    </div>
+    <div class="row chips">
+      <button data-aspect="0">Свободно</button>
+      <button data-aspect="1">1:1</button>
+      <button data-aspect="1.3333">4:3</button>
+      <button data-aspect="0.75">3:4</button>
+      <button data-aspect="1.7778">16:9</button>
+      <button data-aspect="0.5625">9:16</button>
+    </div>
+    <label class="sl">Слева <input type="range" data-obj="crop" data-key="l" min="0" max="45" step="0.5" value="0"><output>0</output></label>
+    <label class="sl">Сверху <input type="range" data-obj="crop" data-key="t" min="0" max="45" step="0.5" value="0"><output>0</output></label>
+    <label class="sl">Справа <input type="range" data-obj="crop" data-key="r" min="0" max="45" step="0.5" value="0"><output>0</output></label>
+    <label class="sl">Снизу <input type="range" data-obj="crop" data-key="b" min="0" max="45" step="0.5" value="0"><output>0</output></label>
+    <button id="applyCrop" class="accent">Обрезать</button>
+  </div>
+
+  <div class="pane" data-pane="adjust" hidden>
+    <div class="row chips">
+      <button data-preset="none">Без фильтра</button>
+      <button data-preset="bw">Ч/Б</button>
+      <button data-preset="sepia">Сепия</button>
+      <button data-preset="warm">Тёплый</button>
+      <button data-preset="cool">Холодный</button>
+      <button data-preset="fade">Выцветший</button>
+      <button data-preset="invert">Негатив</button>
+    </div>
+    <label class="sl">Яркость <input type="range" data-obj="adj" data-key="brightness" min="-100" max="100" value="0"><output>0</output></label>
+    <label class="sl">Контраст <input type="range" data-obj="adj" data-key="contrast" min="-100" max="100" value="0"><output>0</output></label>
+    <label class="sl">Насыщенность <input type="range" data-obj="adj" data-key="saturation" min="-100" max="100" value="0"><output>0</output></label>
+    <label class="sl">Размытие <input type="range" data-obj="adj" data-key="blur" min="0" max="100" value="0"><output>0</output></label>
+    <label class="sl">Резкость <input type="range" data-obj="adj" data-key="sharpen" min="0" max="100" value="0"><output>0</output></label>
+    <div class="row">
+      <button id="applyAdj" class="accent">Применить</button>
+      <button id="resetAdj">Сбросить</button>
+    </div>
+    <p class="note">Изменения применяются автоматически при переходе на другую вкладку.</p>
+  </div>
+
+  <div class="pane" data-pane="text" hidden>
+    <input type="text" data-obj="text" data-key="text" placeholder="Введите текст" maxlength="120">
+    <label class="sl">Размер <input type="range" data-obj="text" data-key="size" min="2" max="30" step="0.5" value="8"><output>8</output></label>
+    <label class="sl">По горизонтали <input type="range" data-obj="text" data-key="x" min="0" max="100" value="50"><output>50</output></label>
+    <label class="sl">По вертикали <input type="range" data-obj="text" data-key="y" min="0" max="100" value="85"><output>85</output></label>
+    <div class="row">
+      <label class="row">Цвет <input type="color" data-obj="text" data-key="color" value="#ffffff"></label>
+      <label class="row"><input type="checkbox" data-obj="text" data-key="outline" checked> Обводка</label>
+    </div>
+    <button id="applyText" class="accent">Добавить на фото</button>
+  </div>
+
+  <div class="pane" data-pane="ai" hidden>
+    <button id="aiBG" class="accent">Удалить фон</button>
+    <div class="row">
+      <label class="row">Фон <input type="color" id="bgColor" value="#ffffff"></label>
+      <button id="fillBG">Залить фон цветом</button>
+    </div>
+    <button id="aiUp" class="accent">Улучшить качество ×2</button>
+    <label class="row"><input type="checkbox" id="gpu"> Ускорение через GPU (WebGPU, модели крупнее)</label>
+    <button id="prep">Подготовить для работы без интернета</button>
+    <p class="note">Нейросети работают прямо на телефоне. Модели скачиваются один раз (~100 МБ для обеих), потом лежат в памяти браузера.</p>
+  </div>
+
+  <div class="pane" data-pane="export" hidden>
+    <label class="row">Формат
+      <select id="fmt">
+        <option value="image/png">PNG (без потерь, с прозрачностью)</option>
+        <option value="image/jpeg">JPEG</option>
+        <option value="image/webp">WebP</option>
+      </select>
+    </label>
+    <label class="sl" id="qrow" hidden>Качество <input type="range" id="q" min="50" max="100" value="90"><output>90</output></label>
+    <label class="row">Макс. сторона
+      <select id="maxside">
+        <option value="0">Оригинал</option>
+        <option value="2048">2048 px</option>
+        <option value="1280">1280 px</option>
+        <option value="800">800 px</option>
+      </select>
+    </label>
+    <p class="note" id="expInfo"></p>
+    <div class="row">
+      <button id="doSave" class="accent">Сохранить</button>
+      <button id="doShare" hidden>Поделиться</button>
+    </div>
+  </div>
+
+</section>
+
+<nav id="tabs">
+  <button data-tab="crop" class="on">Кадр</button>
+  <button data-tab="adjust">Цвет</button>
+  <button data-tab="text">Текст</button>
+  <button data-tab="ai">ИИ</button>
+  <button data-tab="export">Экспорт</button>
+</nav>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
